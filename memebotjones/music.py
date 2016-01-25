@@ -20,7 +20,7 @@ snarklist = [
     "wants to tell everybody about his massive erection",
     "is a very naughty boy",
     "thinks he's above the law",
-    "is gay for <oleman"
+    "is gay for moleman"
 ]
 
 
@@ -49,6 +49,7 @@ def move_queue():
     if shutdown_flag:
         with open("queue.txt", "w") as writefile:
             pickle.dump(queue_list, writefile)
+            print("It is now safe to shut down")
     else:
         print("Advancing the queue")
         queue_list.pop(0)
@@ -115,8 +116,8 @@ def next(message, client):
 def queue(message, client):
     string_send = "The current queue is:\n"
     for entry in queue_list:
-        entry += "{}. {} \n".format(queue_list.index(entry) + 1, entry)
-    entry += "Add a new song to the queue with $add"
+        string_send += "{}. {} \n".format(queue_list.index(entry) + 1, entry)
+    string_send += "Add a new song to the queue with $add"
     yield from client.send_message(message.channel, string_send)
 
 
