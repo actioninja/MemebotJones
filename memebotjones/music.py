@@ -31,8 +31,11 @@ def join(message, client):
     except discord.errors.InvalidArgument:
         print("The configured voice channel in the config does not exist.")
     global queue_list
-    with open("queue.txt") as readfile:
-        queue_list = pickle.load(readfile)
+    try:
+        with open("queue.txt") as readfile:
+            queue_list = pickle.load(readfile)
+    except FileNotFoundError:
+        print("No previous queue, running anyways")
     global voice
     voice = yield from client.join_voice_channel(channel)
     if len(queue_list) != 0:
@@ -88,7 +91,8 @@ def add(message, client):
 def skip(message, client):
     if message.author.id not in skiplist or message.author.id != "98900092924215296":
         skiplist.append(message.author.id)
-        yield from client.send_message(message.channel, "{} has voted to skip the currently playing track. \n {}/{}".format(message.author.name, len(skiplist), config['numberofvotestoskip']))
+        yield from client.send_message(message.channel, "{} has voted to skip the currently playing track. \n {}/{}"
+                                       .format(message.author.name, len(skiplist), config['numberofvotestoskip']))
     else:
         yield from client.send_message(message.channel, "{} has already voted to skip.".format(message.author.name))
     if len(skiplist) >= config['numberofvotestoskip']:
@@ -126,6 +130,15 @@ def shutdown(message, client):
     if message.author.id == config['ownerid']:
         global shutdown_flag
         shutdown_flag = True
+        yield from client.send_message(message.channel, "Shutdown initialized.  Will commence once the currently playing track ends.")
+
+
+@base.memefunc
+def KILLITOHGOD(message, client):
+    if message.author.id == config['ownerid']:
+        clear_queue()
+        player.stop()
+        yield from client.send_message(message.channel, "Queue dumped and playing stopped.  Don't break it again assholes")
 
 
 def clear_queue():
