@@ -14,7 +14,13 @@ try:
 except FileNotFoundError:
     print("You do not have a config file!  New one generated as config.json, exiting.")
     with open('config.json', 'w') as outfile:
-        data = {'version': "0.1", 'email': "", 'password': "", 'ownerid': "", 'invoker': "$", 'voicechannel': "", 'numberofvotestoskip': 4}
+        data = {'version': "0.1",
+                  'email': "",
+                  'password': "",
+                  'ownerid': "",
+                  'invoker': "$",
+                  'voicechannel': "",
+                  'percenttoskip': 75}
         json.dump(data, outfile)
         sys.exit()
 
@@ -22,7 +28,7 @@ except FileNotFoundError:
 # If the config is outdated, some nasty ass shit can happen.
 # Update this variable only when the config gets new parameters.
 # TODO: Make it auto add the new required variables.
-if config['version'] != "0.1":
+if config['version'] != "0.2":
     print("Your config file is outdated.  Please update your config with new values added since last patch.")
     sys.exit()
 

@@ -48,6 +48,8 @@ def move_queue():
             pickle.dump(queue_list, writefile)
     else:
         print("Advancing the queue")
+        skiplist = [] 
+        player.stop()
         queue_list.pop(0)
         if len(queue_list) != 0:
             play_next()
@@ -63,13 +65,13 @@ def play_next():
     # This except doesn't seem to work right.  Not sure about it.
     except discord.ClientException:
         print('invalid link, skipping..')
-        play_next()
+        move_queue() 
 
-
+'''
 def skip_current_track():
     player.stop()
     move_queue()
-
+'''
 
 @base.memefunc
 def add(message, client):
@@ -91,10 +93,11 @@ def skip(message, client):
         yield from client.send_message(message.channel, "{} has voted to skip the currently playing track. \n {}/{}".format(message.author.name, len(skiplist), config['numberofvotestoskip']))
     else:
         yield from client.send_message(message.channel, "{} has already voted to skip.".format(message.author.name))
-    if len(skiplist) >= config['numberofvotestoskip']:
-        global skiplist
-        skiplist = []
-        skip_current_track()
+    # max skips is equal to the percent configured in the Config converted to a decimal
+    #times the number of users in the channel memebot is in, rounded to the nearest whole number.
+    max_skips = round(config['percenttoskip'] / 100 * len(voice.channel.voice_members)
+    if len(skiplist) >= max_skips:
+        move_queue()
         yield from client.send_message(message.channel, "Skipping current track...")
 
 
@@ -102,7 +105,7 @@ def skip(message, client):
 def next(message, client):
     if message.author.id == config['ownerid']:
         yield from client.send_message(message.channel, "Forcing skip by admin...")
-        skip_current_track()
+        move_queue()
     else:
         yield from client.send_message(message.channel, "{} {}".format(message.author.name, choice(snarklist)))
 
