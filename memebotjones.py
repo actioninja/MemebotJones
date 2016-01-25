@@ -27,12 +27,9 @@ if config['version'] != "0.1":
     sys.exit()
 
 
-linkspool = []
+queue_list = []
 client = discord.Client(max_messages=3000)
 voice = None
-
-
-
 
 
 @client.async_event
@@ -41,9 +38,6 @@ def on_ready():
     print(client.user.name)
     print(client.user.id)
     print("-------------------------------")
-    # Using the voice channel value from the config, the bot will immediately connect to the voice channel as soon as it
-    # is running.
-
 
 
 @client.async_event
@@ -64,11 +58,10 @@ def on_typing(channel, user, when):
 
 
 @client.async_event
-def on_error(event):
+def on_error(event, args):
     print("Caught error, dumping queue")
     print(traceback.format_exc())
     memebotjones.music.clear_queue()
-
 
 
 def main_task():

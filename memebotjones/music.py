@@ -1,0 +1,107 @@
+import memebotjones.base as base
+import discord
+import asyncio
+import json
+from random import choice
+
+# set up some needed globals
+with open("config.json") as data:
+    config = json.load(data)
+
+queue_list = []
+skiplist = []
+player = None
+snarklist = [
+    "is not in the sudoers file.  This incident will be reported.",
+    "doesn't have permission to use admin commands, but tried to anyways",
+    "is a massive wanglord",
+    "wants to tell everybody about his massive erection",
+    "is a very naughty boy",
+    "thinks he's above the law",
+    "is gay for <oleman"
+]
+
+
+@base.memefunc
+def join(message, client):
+    try:
+        channel = discord.utils.get(client.get_all_channels(), name=config['voicechannel'])
+    except discord.errors.InvalidArgument:
+        print("The configured voice channel in the config does not exist.")
+    global voice
+    voice = yield from client.join_voice_channel(channel)
+
+# Define some utility functions first
+
+# This is an internally used function that advances the play queue,
+# then plays the next in the queue if there is something in the queue.
+def move_queue():
+    print("Advancing the queue")
+    queue_list.pop(0)
+    if len(queue_list) != 0:
+        play_next()
+
+
+# Plays the next entry in the queue.  Pretty straight forward
+def play_next():
+    try:
+        global player
+        player = voice.create_ytdl_player(queue_list[0], options="--ignore-errors --no-playlist", after=move_queue)  # Also moves queue after finished
+        print("now playing: {}".format(queue_list[0]))
+        player.start()
+    # This except doesn't seem to work right.  Not sure about it.
+    except discord.ClientException:
+        print('invalid link, skipping..')
+        play_next()
+
+
+def skip_current_track():
+    player.stop()
+    move_queue()
+
+
+@base.memefunc
+def add(message, client):
+    link = message.content.split(" ")[1]
+    # validate the link and make sure it's a youtube link first.
+    if link.startswith("https://www.youtube.com") or link.startswith("http://www.youtube.com") or link.startswith("https://youtu.be") or link.startswith("http://youtu.be"):
+        queue_list.append(link)
+        yield from client.send_message(message.channel, "Successfully added link to queue")
+        if len(queue_list) == 1:
+            play_next()
+    else:
+        yield from client.send_message(message.channel, "{} is not a valid youtube link".format(link))
+
+
+@base.memefunc
+def next(message, client):
+    if message.author.id not in skiplist:
+        skiplist.append(message.author.id)
+        yield from client.send_message(message.channel, "{} has voted to skip the currently playing track. \n {}/{}".format(message.author.name, len(skiplist), config['numberofvotestoskip']))
+    else:
+        yield from client.send_message(message.channel, "{} has already voted to skip.".format(message.author.name))
+    if len(skiplist) >= config['numberofvotestoskip']:
+        skip_current_track()
+        yield from client.send_message(message.channel, "Skipping current track...")
+
+
+@base.memefunc
+def skip(message, client):
+    if message.author.id == config['ownerid']:
+        yield from client.send_message(message.channel, "Forcing skip by admin...")
+        skip_current_track()
+    else:
+        yield from client.send_message(message.channel, "{} {}".format(message.author.name, choice(snarklist)))
+
+
+@base.memefunc
+def queue(message, client):
+    yield from client.send_message(message.author, "The current queue is:")
+    for entry in queue_list:
+        yield from client.send_message(message.author, "{}".format(entry))
+    yield from client.send_message(message.author, "Add a new song with $add!")
+
+
+def clear_queue():
+    global queue_list
+    queue_list = []
