@@ -10,10 +10,10 @@ with open("config.json") as data:
     config = json.load(data)
 
 queue_list = []
-skiplist = []
+skip_list = []
 player = None
 shutdown_flag = False
-snarklist = [
+snark_list = [
     "is not in the sudoers file.  This incident will be reported.",
     "doesn't have permission to use admin commands, but tried to anyways",
     "is a massive wanglord",
@@ -90,15 +90,15 @@ def add(message, client):
 
 @base.memefunc
 def skip(message, client):
-    if message.author.id not in skiplist or message.author.id != "98900092924215296":
-        skiplist.append(message.author.id)
+    if message.author.id not in skip_list or message.author.id != "98900092924215296":
+        skip_list.append(message.author.id)
         yield from client.send_message(message.channel, "{} has voted to skip the currently playing track. \n {}/{}"
-                                       .format(message.author.name, len(skiplist), config['numberofvotestoskip']))
+                                       .format(message.author.name, len(skip_list), config['numberofvotestoskip']))
     else:
         yield from client.send_message(message.channel, "{} has already voted to skip.".format(message.author.name))
-    if len(skiplist) >= config['numberofvotestoskip']:
-        global skiplist
-        skiplist = []
+    if len(skip_list) >= config['numberofvotestoskip']:
+        global skip_list
+        skip_list = []
         skip_current_track()
         yield from client.send_message(message.channel, "Skipping current track...")
 
@@ -109,7 +109,7 @@ def next(message, client):
         yield from client.send_message(message.channel, "Forcing skip by admin...")
         skip_current_track()
     else:
-        yield from client.send_message(message.channel, "{} {}".format(message.author.name, choice(snarklist)))
+        yield from client.send_message(message.channel, "{} {}".format(message.author.name, choice(snark_list)))
 
 
 @base.memefunc
