@@ -43,6 +43,7 @@ def join(message, client):
 
 # Define some utility functions first
 
+
 # This is an internally used function that advances the play queue,
 # then plays the next in the queue if there is something in the queue.
 def move_queue():
@@ -52,6 +53,9 @@ def move_queue():
             print("It is now safe to shut down")
     else:
         print("Advancing the queue")
+        global skip_list
+        skip_list = []
+        player.stop()
         queue_list.pop(0)
         if len(queue_list) != 0:
             play_next()
@@ -61,25 +65,30 @@ def move_queue():
 def play_next():
     try:
         global player
-        player = voice.create_ytdl_player(queue_list[0], options="--ignore-errors --no-playlist", after=move_queue)  # Also moves queue after finished
+        player = voice.create_ytdl_player(queue_list[0], options="--ignore-errors --no-playlist", after=move_queue)
+        # Also moves queue after finished
         print("now playing: {}".format(queue_list[0]))
         player.start()
     # This except doesn't seem to work right.  Not sure about it.
     except discord.ClientException:
         print('invalid link, skipping..')
-        play_next()
+        move_queue() 
 
-
+'''
 def skip_current_track():
     player.stop()
     move_queue()
+'''
 
 
 @base.memefunc
 def add(message, client):
     link = message.content.split(" ")[1]
     # validate the link and make sure it's a youtube link first.
-    if link.startswith("https://www.youtube.com") or link.startswith("http://www.youtube.com") or link.startswith("https://youtu.be") or link.startswith("http://youtu.be"):
+    if link.startswith("https://www.youtube.com")\
+            or link.startswith("http://www.youtube.com")\
+            or link.startswith("https://youtu.be") \
+            or link.startswith("http://youtu.be"):
         queue_list.append(link)
         yield from client.send_message(message.channel, "Successfully added link to queue")
         if len(queue_list) == 1:
@@ -96,10 +105,11 @@ def skip(message, client):
                                        .format(message.author.name, len(skip_list), config['numberofvotestoskip']))
     else:
         yield from client.send_message(message.channel, "{} has already voted to skip.".format(message.author.name))
-    if len(skip_list) >= config['numberofvotestoskip']:
-        global skip_list
-        skip_list = []
-        skip_current_track()
+    # max skips is equal to the percent configured in the Config converted to a decimal
+    # times the number of users in the channel memebot is in, rounded to the nearest whole number.
+    max_skips = round(config['percenttoskip'] / 100 * len(voice.channel.voice_members))
+    if len(skip_list) >= max_skips:
+        move_queue()
         yield from client.send_message(message.channel, "Skipping current track...")
 
 
@@ -107,7 +117,7 @@ def skip(message, client):
 def next(message, client):
     if message.author.id == config['ownerid']:
         yield from client.send_message(message.channel, "Forcing skip by admin...")
-        skip_current_track()
+        move_queue()
     else:
         yield from client.send_message(message.channel, "{} {}".format(message.author.name, choice(snark_list)))
 
@@ -131,15 +141,17 @@ def shutdown(message, client):
     if message.author.id == config['ownerid']:
         global shutdown_flag
         shutdown_flag = True
-        yield from client.send_message(message.channel, "Shutdown initialized.  Will commence once the currently playing track ends.")
+        yield from client.send_message(message.channel,
+                                       "Shutdown initialized.  Will commence once the currently playing track ends.")
 
 
 @base.memefunc
-def KILLITOHGOD(message, client):
+def killitohgod(message, client):
     if message.author.id == config['ownerid']:
         clear_queue()
         player.stop()
-        yield from client.send_message(message.channel, "Queue dumped and playing stopped.  Don't break it again assholes")
+        yield from client.send_message(message.channel,
+                                       "Queue dumped and playing stopped.  Don't break it again assholes")
 
 
 def clear_queue():
